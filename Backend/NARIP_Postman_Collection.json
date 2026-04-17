@@ -1,0 +1,360 @@
+{
+  "info": {
+    "name": "NARIP Backend API Complete",
+    "description": "Complete test collection for the NARIP Node.js backend.\n\nBase URL stored in `base_url` variable (default: http://localhost:5000).\nLogin auto-saves JWT to `token` variable used by all protected requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000" },
+    { "key": "token",    "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "🔧 Health & Metrics",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "Prometheus Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/metrics", "host": ["{{base_url}}"], "path": ["metrics"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔑 Auth",
+      "item": [
+        {
+          "name": "1. Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/send-otp", "host": ["{{base_url}}"], "path": ["auth","send-otp"] }
+          }
+        },
+        {
+          "name": "2. Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\",\n  \"role\": \"admin\",\n  \"otp\": \"PASTE_OTP_HERE\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/signup", "host": ["{{base_url}}"], "path": ["auth","signup"] }
+          }
+        },
+        {
+          "name": "3. Login (saves token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('Token saved:', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@1234\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🛡️ Store Threat",
+      "item": [
+        {
+          "name": "Store Threat Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"input_text\": \"Please wire $50,000 urgently and confidentially to this account.\",\n  \"prediction\": \"Phishing\",\n  \"confidence\": 0.97,\n  \"vectors\": [\"urgency\", \"wire_transfer\", \"confidentiality\"],\n  \"timeStamp\": \"2024-04-14T12:00:00Z\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/store", "host": ["{{base_url}}"], "path": ["api","v1","store"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🎯 Detection",
+      "item": [
+        {
+          "name": "Detect Phishing",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message_id\": \"msg-001\",\n  \"sender\": \"ceo@evil-domain.tk\",\n  \"subject\": \"URGENT: Wire transfer needed immediately\",\n  \"body_text\": \"Please wire $50,000 urgently and confidentially. Do not tell anyone.\",\n  \"urls\": [\"http://malicious.tk/login\", \"http://phish.ml/steal\"],\n  \"headers\": {}\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/phishing", "host": ["{{base_url}}"], "path": ["api","v1","detect","phishing"] }
+          }
+        },
+        {
+          "name": "Detect BEC",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message_id\": \"msg-002\",\n  \"sender\": \"ceo@company.com\",\n  \"reply_to\": \"ceo@fake-company.net\",\n  \"subject\": \"Urgent wire transfer\",\n  \"body_text\": \"Wire transfer of $200,000 urgent. Do not tell finance. Swift routing number needed.\",\n  \"urls\": [],\n  \"headers\": {}\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/bec", "host": ["{{base_url}}"], "path": ["api","v1","detect","bec"] }
+          }
+        },
+        {
+          "name": "Detect Wire Fraud",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"txn_id\": \"txn-9999\",\n  \"amount\": 500000,\n  \"currency\": \"USD\",\n  \"sender_account\": \"ACC-001\",\n  \"recipient_account\": \"ACC-OFFSHORE-999\",\n  \"initiated_at_iso\": \"2024-01-15T02:30:00Z\",\n  \"metadata\": {}\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/wire-fraud", "host": ["{{base_url}}"], "path": ["api","v1","detect","wire-fraud"] }
+          }
+        },
+        {
+          "name": "Detect Supply Chain",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"component_id\": \"lib-openssl\",\n  \"version_old\": \"3.0.1\",\n  \"version_new\": \"3.0.2-malicious\",\n  \"vendor_egress_bytes_per_hour\": 900000,\n  \"baseline_egress_bytes_per_hour\": 10000\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/supply-chain", "host": ["{{base_url}}"], "path": ["api","v1","detect","supply-chain"] }
+          }
+        },
+        {
+          "name": "Detect OTP Fraud",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"sess-abc123\",\n  \"user_id\": \"user-456\",\n  \"keystroke_dwell_ms\": [80, 92, 75, 110, 68],\n  \"keystroke_flight_ms\": [120, 140, 105, 99],\n  \"geo_lat\": 52.5,\n  \"geo_lon\": 13.4,\n  \"device_fingerprint\": \"Mozilla/5.0 fp-hash-xyz\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/otp-fraud", "host": ["{{base_url}}"], "path": ["api","v1","detect","otp-fraud"] }
+          }
+        },
+        {
+          "name": "Detect Account Takeover (ATO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"user-789\",\n  \"login_ip\": \"185.220.101.1\",\n  \"device_id\": \"dev-unknown-99\",\n  \"resource_access\": [\"admin_panel\",\"billing\",\"user_export\",\"db_backup\",\"api_keys\"],\n  \"privilege_level\": 8,\n  \"timestamp_iso\": \"2024-01-15T03:00:00Z\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/account-takeover", "host": ["{{base_url}}"], "path": ["api","v1","detect","account-takeover"] }
+          }
+        },
+        {
+          "name": "Detect Lateral Exfiltration",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"src_ip\": \"10.0.1.5\", \"dst_ip\": \"10.0.2.10\", \"dst_port\": 445, \"bytes_out\": 2000000 },\n  { \"src_ip\": \"10.0.1.5\", \"dst_ip\": \"10.0.3.20\", \"dst_port\": 3389, \"bytes_out\": 1500000 },\n  { \"src_ip\": \"10.0.1.5\", \"dst_ip\": \"192.168.100.99\", \"dst_port\": 22, \"bytes_out\": 5000000 }\n]"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/detect/lateral-exfiltration", "host": ["{{base_url}}"], "path": ["api","v1","detect","lateral-exfiltration"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚖️ Risk Scoring",
+      "item": [
+        {
+          "name": "Unified Risk Score",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": {\n    \"message_id\": \"msg-001\",\n    \"sender\": \"ceo@evil.tk\",\n    \"subject\": \"Wire this immediately\",\n    \"body_text\": \"Wire $100,000 urgently and confidentially\",\n    \"urls\": [\"http://phish.ml/grab\"],\n    \"headers\": {}\n  },\n  \"transaction\": {\n    \"txn_id\": \"txn-001\",\n    \"amount\": 100000,\n    \"currency\": \"USD\",\n    \"sender_account\": \"ACC-CORP\",\n    \"recipient_account\": \"ACC-UNKNOWN\",\n    \"initiated_at_iso\": \"2024-01-15T02:00:00Z\",\n    \"metadata\": {}\n  },\n  \"flows\": [\n    { \"src_ip\": \"10.0.0.5\", \"dst_ip\": \"10.0.0.99\", \"dst_port\": 445, \"bytes_out\": 3000000 }\n  ],\n  \"otp\": null,\n  \"account\": null,\n  \"supply\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/risk/score", "host": ["{{base_url}}"], "path": ["api","v1","risk","score"] }
+          }
+        },
+        {
+          "name": "Risk Snapshot",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/risk/snapshot", "host": ["{{base_url}}"], "path": ["api","v1","risk","snapshot"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🚨 Incidents",
+      "item": [
+        {
+          "name": "Recent Incidents",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/incidents/recent?limit=20",
+              "host": ["{{base_url}}"], "path": ["api","v1","incidents","recent"],
+              "query": [{ "key": "limit", "value": "20" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🤖 Automation & Cases",
+      "item": [
+        {
+          "name": "List Open Cases",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/automation/cases", "host": ["{{base_url}}"], "path": ["api","v1","automation","cases"] }
+          }
+        },
+        {
+          "name": "Set Case Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"resolved\"\n}" },
+            "url": {
+              "raw": "{{base_url}}/api/v1/automation/cases/:caseId/status",
+              "host": ["{{base_url}}"], "path": ["api","v1","automation","cases",":caseId","status"],
+              "variable": [{ "key": "caseId", "value": "paste-case-uuid-here" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📥 Ingest & Integrations",
+      "item": [
+        {
+          "name": "Ingest Falcon Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": { \"version\": \"1.0\" },\n  \"event\": {\n    \"EventSimpleName\": \"ProcessRollup2\",\n    \"DetectName\": \"Suspicious PowerShell\",\n    \"ComputerName\": \"WORKSTATION-01\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/ingest/falcon/event", "host": ["{{base_url}}"], "path": ["api","v1","ingest","falcon","event"] }
+          }
+        },
+        {
+          "name": "List Adapters",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/integrations/adapters", "host": ["{{base_url}}"], "path": ["api","v1","integrations","adapters"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👥 Workforce",
+      "item": [
+        {
+          "name": "Upsert Employee Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"emp-001\",\n  \"email\": \"alice@company.com\",\n  \"display_name\": \"Alice Johnson\",\n  \"department\": \"Finance\",\n  \"role_title\": \"Accountant\",\n  \"manager_id\": \"emp-mgr-01\",\n  \"last_training_completed_at\": \"2023-09-01T00:00:00Z\",\n  \"groups\": [\"finance-team\", \"ap-ar\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/workforce/profiles", "host": ["{{base_url}}"], "path": ["api","v1","workforce","profiles"] }
+          }
+        },
+        {
+          "name": "Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/workforce/dashboard/summary", "host": ["{{base_url}}"], "path": ["api","v1","workforce","dashboard","summary"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}
